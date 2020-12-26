@@ -1,7 +1,9 @@
 """Reminder Bot"""
 from discord.ext import commands
 
+import asyncio
 import threading
+import time
 
 import database
 
@@ -12,14 +14,25 @@ with open('token.txt', 'r') as token_file:
 # Starts the client
 REMINDER_BOT = commands.Bot(command_prefix='>')
 
-def setup_daemons():
+def remind(reminder: dict):
+    """Execute one reminder"""
+    channel = REMINDER_BOT.get_channel(reminder["channel"])
+    current_time = time.time()
+    if reminder["date"] - current_time > 0:
+        time.sleep(reminder["date"] - current_time)
+        hannel.send(reminder["reminder_text"])
+
+async def setup_reminders():
     """Sets up the reminder daemons"""
-    pass
+    for reminder in database.get_reminders():
+        remind(reminder)
+    print(1)
 
 @REMINDER_BOT.event
 async def on_ready():
     print(f'{REMINDER_BOT.user} connected to discord : )')
-    setup_daemons()
+    database.setup_collections()
+    await setup_reminders()
 
 
 @REMINDER_BOT.command()
