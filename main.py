@@ -107,6 +107,7 @@ async def add_reminder(
         )
         # Sends a status message, and restarts the reminders
         if result:
+            # TODO: make the bot look pretty
             await ctx.send("`Reminder stored, Pog`")
             asyncio.create_task(setup_reminders())
         # This means the insertion of the reminder failed
