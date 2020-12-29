@@ -25,6 +25,7 @@ with open("conversions.yml", "r") as conversion_file:
 prefix = ">"
 REMINDER_BOT = commands.Bot(command_prefix=prefix)
 
+
 async def remind(reminder: dict):
     """Execute one reminder"""
     channel = REMINDER_BOT.get_channel(reminder["channel"])
@@ -33,21 +34,24 @@ async def remind(reminder: dict):
         await asyncio.sleep(reminder["date"] - current_time)
         await channel.send(reminder["reminder_text"])
         if reminder["repeating"]:
-            reminder_date = datetime.datetime.fromtimestamp(reminder["date"] + conversion_dict[reminder["repeating"]])
+            reminder_date = datetime.datetime.fromtimestamp(
+                reminder["date"] + conversion_dict[reminder["repeating"]]
+            )
             database.remove_reminder(reminder)
             try:
-                database.insert_reminder(reminder["guild"], 
-                                            reminder["channel"], 
-                                            reminder_date.year, 
-                                            reminder_date.month, 
-                                            reminder_date.day, 
-                                            reminder_date.hour, 
-                                            reminder_date.minute, 
-                                            reminder["reminder_text"], 
-                                            reminder["repeating"])
+                database.insert_reminder(
+                    reminder["guild"],
+                    reminder["channel"],
+                    reminder_date.year,
+                    reminder_date.month,
+                    reminder_date.day,
+                    reminder_date.hour,
+                    reminder_date.minute,
+                    reminder["reminder_text"],
+                    reminder["repeating"],
+                )
             except pymongo.errors.DuplicateKeyError:
                 pass
-        
 
 
 async def setup_reminders():
@@ -65,14 +69,31 @@ async def on_ready():
     print(f"{REMINDER_BOT.user} connected to discord : )")
 
 
-
 @REMINDER_BOT.command()
-async def add_reminder(ctx, year: int, month: int, day: int, hour: int, minute: int, text: str, repeating:Union[str, bool]=False):
+async def add_reminder(
+    ctx,
+    year: int,
+    month: int,
+    day: int,
+    hour: int,
+    minute: int,
+    text: str,
+    repeating: Union[str, bool] = False,
+):
     try:
         if repeating and repeating not in conversion_dict:
-            print(1)
             raise
-        result = database.insert_reminder(ctx.guild.name, ctx.channel.id, year, month, day, hour, minute, text, repeating)
+        result = database.insert_reminder(
+            ctx.guild.name,
+            ctx.channel.id,
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            text,
+            repeating,
+        )
         if result:
             await ctx.send("`Reminder stored, Pog`")
             asyncio.create_task(setup_reminders())
@@ -80,6 +101,7 @@ async def add_reminder(ctx, year: int, month: int, day: int, hour: int, minute: 
             await ctx.send("`Go yell at logan, it broke`")
     except:
         await ctx.send(f"`You malformed the command, use {prefix}help for help`")
+
 
 # Runs the client
 REMINDER_BOT.run(TOKEN)
