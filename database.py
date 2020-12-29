@@ -7,6 +7,7 @@ DB = pymongo.MongoClient().reminder_bot_db
 
 def setup_collections():
     """Sets up unique indexes on all collections"""
+    # Iterates through all collections, enforces uniqueness
     for collection in DB.list_collection_names():
         DB[collection].create_index(
             [("channel", 1), ("date", 1), ("reminder_text", 1), ("repeating", 1)],
@@ -18,7 +19,9 @@ def insert_reminder(
     guild, channel_id, year, month, day, hour, minutes, reminder_text, repeating
 ):
     """Inserts 1 reminder"""
+    # Forms a datetime object with the user's date
     date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
+    # Returns whether the write was successful or not
     return (
         DB[str(guild)]
         .insert_one(
@@ -45,6 +48,7 @@ def get_reminders():
     reminders = []
     for collection in DB.list_collection_names():
         for reminder in DB[collection].find({}):
+            # Deletes the premade _id field from mongodb
             del reminder["_id"]
             reminders.append(reminder)
     return reminders
