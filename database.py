@@ -22,20 +22,23 @@ def insert_reminder(
     # Forms a datetime object with the user's date
     date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
     # Returns whether the write was successful or not
-    return (
-        DB[str(guild)]
-        .insert_one(
-            {
-                "guild": guild,
-                "channel": channel_id,
-                "date": date.timestamp(),
-                "reminder_text": reminder_text,
-                "repeating": repeating,
-                "human_readable_time": date,
-            }
+    try:
+        return (
+            DB[str(guild)]
+            .insert_one(
+                {
+                    "guild": guild,
+                    "channel": channel_id,
+                    "date": date.timestamp(),
+                    "reminder_text": reminder_text,
+                    "repeating": repeating,
+                    "human_readable_time": date,
+                }
+            )
+            .acknowledged
         )
-        .acknowledged
-    )
+    except pymongo.errors.DuplicateKeyError:
+        return False
 
 
 def remove_reminder(reminder: dict):

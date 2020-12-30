@@ -89,34 +89,54 @@ async def add_reminder(
     repeating: Union[str, bool] = False,
 ):
     """Attempts to add a reminder"""
-    try:
-        # Checks if the reminder should repeat, and if it is a valid interval
-        if repeating and repeating not in conversion_dict:
-            raise
-        # Tries to insert the reminder
-        result = database.insert_reminder(
-            ctx.guild.name,
-            ctx.channel.id,
-            year,
-            month,
-            day,
-            hour,
-            minute,
-            text,
-            repeating,
+    # Checks if the reminder should repeat, and if it is a valid interval
+    if repeating and repeating not in conversion_dict:
+        raise commands.UserInputError()
+    # Tries to insert the reminder
+    result = database.insert_reminder(
+        ctx.guild.name,
+        ctx.channel.id,
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        text,
+        repeating,
+    )
+    # Sends a status message, and restarts the reminders
+    if result:
+        # TODO: make the bot look pretty
+        # TODO: confirm reminders with reactions
+        await ctx.send("`Reminder stored, Pog`")
+        asyncio.create_task(setup_reminders())
+    # This means the insertion of the reminder failed
+    else:
+        await ctx.send(
+            "```This reminder already exists in the database\n\nIf you would like to update or delete the reminder run >update_reminder or >delete_reminder```"
         )
-        # Sends a status message, and restarts the reminders
-        if result:
-            # TODO: make the bot look pretty
-            await ctx.send("`Reminder stored, Pog`")
-            asyncio.create_task(setup_reminders())
-        # This means the insertion of the reminder failed
-        else:
-            await ctx.send("`Go yell at logan, it broke`")
-    # TODO: catch specific errors
-    # User Errors
-    except:
-        await ctx.send(f"`You malformed the command, use {prefix}help for help`")
+
+
+@add_reminder.error
+async def add_reminder_error(ctx, error):
+    """Called when add_reminder() errors"""
+    print(error)
+    print(type(error))
+    if isinstance(error, commands.errors.MissingRequiredArgument):
+        await ctx.send(f"`{error} Run {prefix}help add_reminder`")
+    elif isinstance(error, commands.errors.UserInputError):
+        await ctx.send(
+            f"`Your input for the command was not correct, run {prefix}help add_reminder`"
+        )
+    else:
+        await ctx.send(
+            f"`An unexpected error has occured, run {prefix}help add_reminder`"
+        )
+
+
+# TODO: help command
+# TODO: update command
+# TODO: delete command
 
 
 # Runs the client
