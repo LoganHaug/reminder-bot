@@ -39,7 +39,7 @@ def insert_reminder(
         "month": month,
         "day": day,
         "reminder_text": reminder_text,
-        "repeating": repeating,
+        "repeating": repeating.strip(),
         "human_readable_time": date,
     }
     if date < datetime.datetime.now() or not is_unique_reminder(guild, new_doc):
