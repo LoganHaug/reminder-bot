@@ -46,7 +46,7 @@ async def remind(reminder: dict):
         # Wait until the reminder should go off
         await asyncio.sleep(reminder["date"] - time.time())
         # Send the reminder text in the channel
-        await channel.send(reminder["reminder_text"])
+        await channel.send(embed=generate_embed("Reminder", reminder["reminder_text"]))
         # Remove the reminder
         database.remove_reminder(reminder)
     # Schedules a repeating eminder
@@ -139,7 +139,6 @@ async def add_reminder(
     if result:
         # TODO: confirm reminders with reactions
         asyncio.create_task(setup_reminders())
-        # TODO: Make this a bit more verbose
         await ctx.send(embed=generate_embed("Reminder Stored", f"{date}\n{time}\n{text}\nrepeating: {repeating}"))
     # This means the insertion of the reminder failed
     else:
@@ -177,7 +176,7 @@ async def search_reminders(ctx, date: Optional[str] = None):
         db_search = database.get_reminders()
     message = ""
     for reminder in db_search:
-        message += f'\n{reminder["_id"]}\t{reminder["month"]}/{reminder["day"]}/{reminder["year"]}\t{reminder["reminder_text"]}'
+        message += f'\n{reminder["_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}'
     await ctx.send(embed=generate_embed("Search Results:", f"```{message}```"))
 
 
@@ -198,11 +197,17 @@ async def delete_reminder(ctx, index: int):
     if search_result != []:
         delete_result = database.remove_reminder(search_result[0])
         if delete_result:
-            await ctx.send(embed=generate_embed("Error", "The reminder was successfully removed"))
+            await ctx.send(embed=generate_embed("Deleted Reminder", "The reminder was successfully removed"))
         else:
             await ctx.send(embed=generate_embed("Error", "Something went wrong"))
     else:
         await ctx.send(embed=generate_embed("Error", "Could not find a reminder at this index"))
+
+@delete_reminder.error
+async def delete_reminders_error(ctx, error):
+    await ctx.send(
+        embed=generate_embed("Error", f"{error} Try running {prefix}help delete_reminder"
+    ))
 
 
 @REMINDER_BOT.event
