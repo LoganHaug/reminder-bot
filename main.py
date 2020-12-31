@@ -7,7 +7,7 @@ import asyncio
 import datetime
 import threading
 import time
-from typing import Union
+from typing import Union, Optional
 
 import database
 
@@ -129,7 +129,8 @@ async def add_reminder(
         # TODO: make the bot look pretty
         # TODO: confirm reminders with reactions
         asyncio.create_task(setup_reminders())
-        await ctx.send("`Reminder stored, Pog`")
+        # TODO: Make this a bit more verbose
+        await ctx.send("```Reminder stored, Pog```")
     # This means the insertion of the reminder failed
     else:
         await ctx.send(
@@ -152,22 +153,48 @@ async def add_reminder_error(ctx, error):
 
 
 @REMINDER_BOT.command()
-async def search_reminders(ctx, date: str):
+async def search_reminders(ctx, date: Optional[str] = None):
     """Searches for reminders on a specific day"""
-    try:
-        date = split_date(date)
-    except UnboundLocalError:
-        ctx.send("Date was not in the correct format.")
-        return 1
+    if date:
+        try:
+            date = split_date(date)
+        except UnboundLocalError:
+            await ctx.send("Date was not in the correct format.")
+            return 1
+        db_search = database.get_reminders(
+            {"year": date["year"], "month": date["month"], "day": date["day"]}
+        )
+    else:
+        db_search = database.get_reminders()
     message = ""
-    for reminder in database.get_reminders({"year": date["year"], "month": date["month"], "day": date["day"]}):
+    for reminder in db_search:
         message += f'\n{reminder["_id"]}\t{reminder["month"]}/{reminder["day"]}/{reminder["year"]}\t{reminder["reminder_text"]}'
     await ctx.send(f"```Here are the reminders:\n{message}```")
 
 
+@search_reminders.error
+async def search_reminders_error(ctx, error):
+    print(error)
+    await ctx.send(
+        f"```Something went wrong, try running {prefix}help search_reminders```"
+    )
+
+
 # TODO: update command
-# TODO: delete command
-# TODO: Search Command
+
+
+@REMINDER_BOT.command()
+async def delete_reminder(ctx, index: int):
+    """Deletes a reminder at a specific index"""
+    search_result = database.get_reminders({"_id": index})
+    if search_result != []:
+        delete_result = database.remove_reminder(search_result[0])
+        if delete_result:
+            await ctx.send("```The reminder was successfully removed```")
+        else:
+            await ctx.send("```Something went wrong```")
+    else:
+        await ctx.send("```Could not find a reminder at this index```")
 
 
 @REMINDER_BOT.event
