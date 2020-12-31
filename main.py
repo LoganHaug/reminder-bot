@@ -36,25 +36,31 @@ async def remind(reminder: dict):
         await asyncio.sleep(reminder["date"] - time.time())
         # Send the reminder text in the channel
         await channel.send(reminder["reminder_text"])
-        if reminder["repeating"]:
-            # Calculate when the next remidner should be
-            reminder_date = datetime.datetime.fromtimestamp(
-                reminder["date"] + conversion_dict[reminder["repeating"]]
-            )
-            # Remove the old reminder
-            database.remove_reminder(reminder)
-            # Add the new reminder
-            database.insert_reminder(
-                reminder["guild"],
-                reminder["channel"],
-                reminder_date.year,
-                reminder_date.month,
-                reminder_date.day,
-                reminder_date.hour,
-                reminder_date.minute,
-                reminder["reminder_text"],
-                reminder["repeating"],
-            )
+        # Remove the reminder
+        database.remove_reminder(reminder)
+    # Schedules a repeating eminder
+    if reminder["repeating"]:
+        # Calculate when the next remidner should be
+        reminder_date = datetime.datetime.fromtimestamp(
+            reminder["date"] + conversion_dict[reminder["repeating"]]
+        )
+        # Remove the old reminder
+        database.remove_reminder(reminder)
+        # Add the new reminder
+        database.insert_reminder(
+            reminder["guild"],
+            reminder["channel"],
+            reminder_date.year,
+            reminder_date.month,
+            reminder_date.day,
+            reminder_date.hour,
+            reminder_date.minute,
+            reminder["reminder_text"],
+            reminder["repeating"],
+        )
+    # Remove a reminder that has passed
+    else:
+        database.remove_reminder(reminder)
 
 
 async def setup_reminders():
@@ -66,15 +72,6 @@ async def setup_reminders():
         tasks.append(asyncio.create_task(remind(reminder)))
     # Run the tasks
     asyncio.gather(*tasks)
-
-
-@REMINDER_BOT.event
-async def on_ready():
-    """Responds to when the bot readys"""
-    # Setup the collections and reminders, print a status message
-    database.setup_collections()
-    asyncio.create_task(setup_reminders())
-    print(f"{REMINDER_BOT.user} connected to discord : )")
 
 
 @REMINDER_BOT.command()
@@ -108,20 +105,19 @@ async def add_reminder(
     if result:
         # TODO: make the bot look pretty
         # TODO: confirm reminders with reactions
-        await ctx.send("`Reminder stored, Pog`")
         asyncio.create_task(setup_reminders())
+        await ctx.send("`Reminder stored, Pog`")
     # This means the insertion of the reminder failed
     else:
         await ctx.send(
-            "```This reminder already exists in the database\n\nIf you would like to update or delete the reminder run >update_reminder or >delete_reminder```"
+            "```This reminder already exists in the database or is not in the future```"
         )
 
 
 @add_reminder.error
 async def add_reminder_error(ctx, error):
     """Called when add_reminder() errors"""
-    print(error)
-    print(type(error))
+    print(f"Bruh: {error}")
     if isinstance(error, commands.errors.MissingRequiredArgument):
         await ctx.send(f"`{error} Run {prefix}help add_reminder`")
     elif isinstance(error, commands.errors.UserInputError):
@@ -134,9 +130,16 @@ async def add_reminder_error(ctx, error):
         )
 
 
-# TODO: help command
 # TODO: update command
 # TODO: delete command
+
+
+@REMINDER_BOT.event
+async def on_ready():
+    """Responds to when the bot readys"""
+    # Setup the collections and reminders, print a status message
+    asyncio.create_task(setup_reminders())
+    print(f"{REMINDER_BOT.user} connected to discord : )")
 
 
 # Runs the client

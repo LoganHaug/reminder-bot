@@ -5,14 +5,23 @@ import pymongo
 DB = pymongo.MongoClient().reminder_bot_db
 
 
-def setup_collections():
-    """Sets up unique indexes on all collections"""
-    # Iterates through all collections, enforces uniqueness
-    for collection in DB.list_collection_names():
-        DB[collection].create_index(
-            [("channel", 1), ("date", 1), ("reminder_text", 1), ("repeating", 1)],
-            unique=True,
-        )
+def get_new_id(guild):
+    """Gets a new auto-incremented id"""
+    result = DB[guild].find({}).sort("_id", -1)
+    if result.count() > 0:
+        return result[0]["_id"] + 1
+    return 0
+
+
+def is_unique_reminder(guild, new_doc):
+    """Ensures that a new reminder will be unique"""
+    reminders = DB[guild].find({})
+    for reminder in reminders:
+        if reminder["reminder_text"] == new_doc["reminder_text"]:
+            if reminder["date"] == new_doc["date"]:
+                if reminder["channel"] == new_doc["channel"]:
+                    return False
+    return True    
 
 
 def insert_reminder(
@@ -20,25 +29,20 @@ def insert_reminder(
 ):
     """Inserts 1 reminder"""
     # Forms a datetime object with the user's date
-    date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
-    # Returns whether the write was successful or not
-    try:
-        return (
-            DB[str(guild)]
-            .insert_one(
-                {
-                    "guild": guild,
-                    "channel": channel_id,
-                    "date": date.timestamp(),
-                    "reminder_text": reminder_text,
-                    "repeating": repeating,
-                    "human_readable_time": date,
-                }
-            )
-            .acknowledged
-        )
-    except pymongo.errors.DuplicateKeyError:
+    date = datetime.datetime(year, month, day, hour, minutes)
+    new_doc = {
+                "_id": get_new_id(guild),
+                "guild": guild,
+                "channel": channel_id,
+                "date": date.timestamp(),
+                "reminder_text": reminder_text,
+                "repeating": repeating,
+                "human_readable_time": date,
+            }
+    if date < datetime.datetime.now() or not is_unique_reminder(guild, new_doc):
         return False
+    # Returns whether the write was successful or not
+    return DB[str(guild)].insert_one(new_doc).acknowledged
 
 
 def remove_reminder(reminder: dict):
@@ -51,7 +55,5 @@ def get_reminders():
     reminders = []
     for collection in DB.list_collection_names():
         for reminder in DB[collection].find({}):
-            # Deletes the premade _id field from mongodb
-            del reminder["_id"]
             reminders.append(reminder)
     return reminders
