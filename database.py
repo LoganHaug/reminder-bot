@@ -21,7 +21,7 @@ def is_unique_reminder(guild, new_doc):
             if reminder["date"] == new_doc["date"]:
                 if reminder["channel"] == new_doc["channel"]:
                     return False
-    return True    
+    return True
 
 
 def insert_reminder(
@@ -31,14 +31,17 @@ def insert_reminder(
     # Forms a datetime object with the user's date
     date = datetime.datetime(year, month, day, hour, minutes)
     new_doc = {
-                "_id": get_new_id(guild),
-                "guild": guild,
-                "channel": channel_id,
-                "date": date.timestamp(),
-                "reminder_text": reminder_text,
-                "repeating": repeating,
-                "human_readable_time": date,
-            }
+        "_id": get_new_id(guild),
+        "guild": guild,
+        "channel": channel_id,
+        "date": date.timestamp(),
+        "year": year,
+        "month": month,
+        "day": day,
+        "reminder_text": reminder_text,
+        "repeating": repeating,
+        "human_readable_time": date,
+    }
     if date < datetime.datetime.now() or not is_unique_reminder(guild, new_doc):
         return False
     # Returns whether the write was successful or not
@@ -50,10 +53,10 @@ def remove_reminder(reminder: dict):
     return DB[reminder["guild"]].delete_one(reminder).acknowledged
 
 
-def get_reminders():
+def get_reminders(query={}):
     """Returns a list of reminders to send messages for"""
     reminders = []
     for collection in DB.list_collection_names():
-        for reminder in DB[collection].find({}):
+        for reminder in DB[collection].find(query):
             reminders.append(reminder)
     return reminders

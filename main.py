@@ -74,30 +74,53 @@ async def setup_reminders():
     asyncio.gather(*tasks)
 
 
-@REMINDER_BOT.command()
+def split_date(date: str):
+    """Splits a string date into year, month, day, and hour"""
+    if "-" in date:
+        split_date = date.strip().split("-")
+    elif "/" in date:
+        split_date = date.strip().split("/")
+    return {
+        "month": int(split_date[0]),
+        "day": int(split_date[1]),
+        "year": int(split_date[2]),
+    }
+
+
+def split_time(time: str):
+    """Splits a string time into hour and minute"""
+    time = time.strip().split(":")
+    return {"hour": int(time[0]), "minute": int(time[1])}
+
+
+@REMINDER_BOT.command(
+    help="Date should be in month/day/year format, either with slashes or dashes (ex. month/day/year or month-day-year\n\nRepeating is an interval of time after which the reminder should be sent again, must be either daily, weekly, biweekly, or triweekly\n\nText is the text the reminder will be sent with, wrap with quotations if this contains whitespace"
+)
 async def add_reminder(
     ctx,
-    year: int,
-    month: int,
-    day: int,
-    hour: int,
-    minute: int,
+    date: str,
+    time: str,
     text: str,
     repeating: Union[str, bool] = False,
 ):
     """Attempts to add a reminder"""
     # Checks if the reminder should repeat, and if it is a valid interval
+    try:
+        date = split_date(date)
+        time = split_time(time)
+    except UnboundLocalError:
+        raise commands.UserInputError("Date or time was not in the correct format.")
     if repeating and repeating not in conversion_dict:
         raise commands.UserInputError()
     # Tries to insert the reminder
     result = database.insert_reminder(
         ctx.guild.name,
         ctx.channel.id,
-        year,
-        month,
-        day,
-        hour,
-        minute,
+        date["year"],
+        date["month"],
+        date["day"],
+        time["hour"],
+        time["minute"],
         text,
         repeating,
     )
@@ -121,17 +144,30 @@ async def add_reminder_error(ctx, error):
     if isinstance(error, commands.errors.MissingRequiredArgument):
         await ctx.send(f"`{error} Run {prefix}help add_reminder`")
     elif isinstance(error, commands.errors.UserInputError):
-        await ctx.send(
-            f"`Your input for the command was not correct, run {prefix}help add_reminder`"
-        )
+        await ctx.send(f"`{error} Run {prefix}help add_reminder`")
     else:
         await ctx.send(
             f"`An unexpected error has occured, run {prefix}help add_reminder`"
         )
 
 
+@REMINDER_BOT.command()
+async def search_reminders(ctx, date: str):
+    """Searches for reminders on a specific day"""
+    try:
+        date = split_date(date)
+    except UnboundLocalError:
+        ctx.send("Date was not in the correct format.")
+        return 1
+    message = ""
+    for reminder in database.get_reminders({"year": date["year"], "month": date["month"], "day": date["day"]}):
+        message += f'\n{reminder["_id"]}\t{reminder["month"]}/{reminder["day"]}/{reminder["year"]}\t{reminder["reminder_text"]}'
+    await ctx.send(f"```Here are the reminders:\n{message}```")
+
+
 # TODO: update command
 # TODO: delete command
+# TODO: Search Command
 
 
 @REMINDER_BOT.event
