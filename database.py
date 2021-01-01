@@ -7,7 +7,7 @@ DB = pymongo.MongoClient().reminder_bot_db
 
 def get_new_id(guild):
     """Gets a new auto-incremented id"""
-    result = DB[guild].find({}).sort("_id", -1)
+    result = DB[guild + "_REMINDERS"].find({}).sort("_id", -1)
     if result.count() > 0:
         return result[0]["_id"] + 1
     return 0
@@ -45,18 +45,28 @@ def insert_reminder(
     if date < datetime.datetime.now() or not is_unique_reminder(guild, new_doc):
         return False
     # Returns whether the write was successful or not
-    return DB[str(guild)].insert_one(new_doc).acknowledged
+    return DB[f'{guild}_REMINDERS'].insert_one(new_doc).acknowledged
+
+
+def insert_operator(guild, user_id):
+    """Inserts a document of a user that is an adminstrator"""
+    return DB[f"{guild}_USERS"].insert_one({"_id": user_id}).acknowledged
 
 
 def remove_reminder(reminder: dict):
     """Removes a reminder"""
-    return DB[reminder["guild"]].delete_one(reminder).acknowledged
+    return DB[f'{reminder["guild"]}_REMINDERS'].delete_one(reminder).acknowledged
 
 
-def get_reminders(query={}):
+def get_reminders(guild=None, **query):
     """Returns a list of reminders to send messages for"""
     reminders = []
-    for collection in DB.list_collection_names():
-        for reminder in DB[collection].find(query):
+    if guild:
+        for reminder in DB[f'{guild}_REMINDERS'].find(query):
             reminders.append(reminder)
+    else:
+        for collection in DB.list_collection_names():
+            if collection[-10:] == "_REMINDERS":
+                for reminder in DB[collection].find(query):
+                    reminders.append(reminder)
     return reminders
