@@ -24,7 +24,7 @@ with open("conversions.yml", "r") as conversion_file:
 
 # Starts the client
 prefix = ">"
-prefix_func = commands.when_mentioned_or('{} '.format(prefix), prefix)
+prefix_func = commands.when_mentioned_or("{} ".format(prefix), prefix)
 REMINDER_BOT = commands.Bot(command_prefix=prefix_func)
 
 
