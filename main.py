@@ -28,7 +28,8 @@ scheduled_reminders = []
 
 # Starts the client
 prefix = ">"
-REMINDER_BOT = commands.Bot(command_prefix=prefix)
+prefix_func = commands.when_mentioned_or("{} ".format(prefix), prefix)
+REMINDER_BOT = commands.Bot(command_prefix=prefix_func)
 
 
 def is_operator(ctx):
@@ -38,6 +39,7 @@ def is_operator(ctx):
             {"_id": ctx.message.author.id}
         )
     )
+
 
 
 @REMINDER_BOT.command()
@@ -243,6 +245,7 @@ async def delete_reminder(ctx, index: int):
         await ctx.send(
             embed=generate_embed("Error", "Could not find a reminder at this index")
         )
+
 
 
 @delete_reminder.error
