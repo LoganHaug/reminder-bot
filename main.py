@@ -11,7 +11,7 @@ import time
 from typing import Union, Optional
 
 import database
-from utils import generate_embed, split_date, split_time
+from utils import generate_embed, is_administrator, split_date, split_time
 
 
 # Grabs the bot token
@@ -22,6 +22,9 @@ with open("token.txt", "r") as token_file:
 with open("conversions.yml", "r") as conversion_file:
     conversion_dict = yaml.load(conversion_file, Loader=yaml.Loader)
 
+
+# Holds reminders that are scheduled
+scheduled_reminders = []
 
 # Starts the client
 prefix = ">"
@@ -35,10 +38,6 @@ def is_operator(ctx):
             {"_id": ctx.message.author.id}
         )
     )
-
-
-def is_administrator(ctx):
-    return ctx.message.author.id == 322158695184203777
 
 
 @REMINDER_BOT.command()
@@ -60,11 +59,13 @@ async def remind(reminder: dict):
         channel = REMINDER_BOT.get_channel(reminder["channel"])
         # Wait until the reminder should go off
         await asyncio.sleep(reminder["date"] - time.time())
-        # Send the reminder text in the channel
-        await channel.send(f"```Reminder\n\n{reminder['reminder_text']}```")
-        # Remove the reminder
-        database.remove_reminder(reminder)
-    # Schedules a repeating eminder
+        # Checks if the reminder is still scheduled, in case of deletion
+        if reminder in scheduled_reminders:
+            # Send the reminder text in the channel
+            await channel.send(f"```Reminder\n\n{reminder['reminder_text']}```")
+            # Remove the reminder
+            database.remove_reminder(reminder)
+    # Schedules a repeating reminder
     if reminder["repeating"]:
         # Calculate when the next remidner should be
         reminder_date = datetime.datetime.fromtimestamp(
@@ -91,11 +92,22 @@ async def remind(reminder: dict):
 
 async def setup_reminders():
     """Sets up the reminders"""
+
+    reminders = database.get_reminders()
+    new_schedule = []
+    for scheduled_reminder in scheduled_reminders:
+        if scheduled_reminder in reminders:
+            new_schedule.append(scheduled_reminder)
+    scheduled_reminders.clear()
+    scheduled_reminders.extend(new_schedule)
     # Stores all the reminder tasks
     tasks = []
     # Create tasks for all reminders, call the remind function
-    for reminder in database.get_reminders():
-        tasks.append(asyncio.create_task(remind(reminder)))
+    for reminder in reminders:
+        # If the current reminder is not scheduled, schedule it
+        if reminder not in scheduled_reminders:
+            scheduled_reminders.append(reminder)
+            tasks.append(asyncio.create_task(remind(reminder)))
     # Run the tasks
     asyncio.gather(*tasks)
 
@@ -194,7 +206,7 @@ async def search_reminders(ctx, date: Optional[str] = None):
         db_search = database.get_reminders(ctx.message.guild)
     message = ""
     for reminder in db_search:
-        message += f'\n{reminder["_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}'
+        message += f'\n{reminder["_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}\n'
     if not message:
         message = "No reminders found"
     await ctx.send(embed=generate_embed("Search Results:", f"```{message}```"))

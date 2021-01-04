@@ -2,6 +2,7 @@
 
 import discord
 
+
 def generate_embed(title: str, desc: str):
     return discord.Embed(
         **{
@@ -10,6 +11,11 @@ def generate_embed(title: str, desc: str):
             "color": discord.Color(0).dark_magenta(),
         }
     )
+
+
+def is_administrator(ctx):
+    return ctx.message.author.id == 322158695184203777
+
 
 def split_date(date: str):
     """Splits a string date into year, month, day, and hour"""
