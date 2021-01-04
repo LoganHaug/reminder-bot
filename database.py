@@ -45,7 +45,7 @@ def insert_reminder(
     if date < datetime.datetime.now() or not is_unique_reminder(guild, new_doc):
         return False
     # Returns whether the write was successful or not
-    return DB[f'{guild}_REMINDERS'].insert_one(new_doc).acknowledged
+    return DB[f"{guild}_REMINDERS"].insert_one(new_doc).acknowledged
 
 
 def insert_operator(guild, user_id):
@@ -62,7 +62,7 @@ def get_reminders(guild=None, **query):
     """Returns a list of reminders to send messages for"""
     reminders = []
     if guild:
-        for reminder in DB[f'{guild}_REMINDERS'].find(query):
+        for reminder in DB[f"{guild}_REMINDERS"].find(query):
             reminders.append(reminder)
     else:
         for collection in DB.list_collection_names():

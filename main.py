@@ -11,6 +11,7 @@ import time
 from typing import Union, Optional
 
 import database
+from utils import generate_embed, is_administrator, split_date, split_time
 
 
 # Grabs the bot token
@@ -22,29 +23,23 @@ with open("conversions.yml", "r") as conversion_file:
     conversion_dict = yaml.load(conversion_file, Loader=yaml.Loader)
 
 
+# Holds reminders that are scheduled
+scheduled_reminders = []
+
 # Starts the client
 prefix = ">"
 prefix_func = commands.when_mentioned_or("{} ".format(prefix), prefix)
 REMINDER_BOT = commands.Bot(command_prefix=prefix_func)
 
 
-def generate_embed(title: str, desc: str):
-    return discord.Embed(
-        **{
-            "title": title,
-            "description": desc,
-            "color": discord.Color(0).dark_magenta(),
-        }
-    )
-
-
 def is_operator(ctx):
     """Returns whether the user of the context is an operator of the bot"""
-    return bool(database.DB[f"{ctx.message.guild}_USERS"].find_one({"_id": ctx.message.author.id}))
+    return bool(
+        database.DB[f"{ctx.message.guild}_USERS"].find_one(
+            {"_id": ctx.message.author.id}
+        )
+    )
 
-
-def is_administrator(ctx):
-    return ctx.message.author.id == 322158695184203777
 
 
 @REMINDER_BOT.command()
@@ -52,7 +47,9 @@ def is_administrator(ctx):
 async def add_operator(ctx, user):
     database.insert_operator(ctx.message.guild, int(user[3:-1]))
     await ctx.send(
-        embed=generate_embed("Success, Operator added", f"Added user {user[3:-1]} as an operator")
+        embed=generate_embed(
+            "Success, Operator added", f"Added user {user[3:-1]} as an operator"
+        )
     )
 
 
@@ -64,11 +61,13 @@ async def remind(reminder: dict):
         channel = REMINDER_BOT.get_channel(reminder["channel"])
         # Wait until the reminder should go off
         await asyncio.sleep(reminder["date"] - time.time())
-        # Send the reminder text in the channel
-        await channel.send(embed=generate_embed("Reminder", reminder["reminder_text"]))
-        # Remove the reminder
-        database.remove_reminder(reminder)
-    # Schedules a repeating eminder
+        # Checks if the reminder is still scheduled, in case of deletion
+        if reminder in scheduled_reminders:
+            # Send the reminder text in the channel
+            await channel.send(f"```Reminder\n\n{reminder['reminder_text']}```")
+            # Remove the reminder
+            database.remove_reminder(reminder)
+    # Schedules a repeating reminder
     if reminder["repeating"]:
         # Calculate when the next remidner should be
         reminder_date = datetime.datetime.fromtimestamp(
@@ -95,32 +94,24 @@ async def remind(reminder: dict):
 
 async def setup_reminders():
     """Sets up the reminders"""
+
+    reminders = database.get_reminders()
+    new_schedule = []
+    for scheduled_reminder in scheduled_reminders:
+        if scheduled_reminder in reminders:
+            new_schedule.append(scheduled_reminder)
+    scheduled_reminders.clear()
+    scheduled_reminders.extend(new_schedule)
     # Stores all the reminder tasks
     tasks = []
     # Create tasks for all reminders, call the remind function
-    for reminder in database.get_reminders():
-        tasks.append(asyncio.create_task(remind(reminder)))
+    for reminder in reminders:
+        # If the current reminder is not scheduled, schedule it
+        if reminder not in scheduled_reminders:
+            scheduled_reminders.append(reminder)
+            tasks.append(asyncio.create_task(remind(reminder)))
     # Run the tasks
     asyncio.gather(*tasks)
-
-
-def split_date(date: str):
-    """Splits a string date into year, month, day, and hour"""
-    if "-" in date:
-        split_date = date.strip().split("-")
-    elif "/" in date:
-        split_date = date.strip().split("/")
-    return {
-        "month": int(split_date[0]),
-        "day": int(split_date[1]),
-        "year": int(split_date[2]),
-    }
-
-
-def split_time(time: str):
-    """Splits a string time into hour and minute"""
-    time = time.strip().split(":")
-    return {"hour": int(time[0]), "minute": int(time[1])}
 
 
 @REMINDER_BOT.command(
@@ -168,7 +159,8 @@ async def add_reminder(
     else:
         await ctx.send(
             embed=generate_embed(
-                "Error", "`This reminder already exists in the database or is not in the future`"
+                "Error",
+                "`This reminder already exists in the database or is not in the future`",
             )
         )
 
@@ -177,17 +169,24 @@ async def add_reminder(
 async def add_reminder_error(ctx, error):
     """Called when add_reminder() errors"""
     if isinstance(error, commands.errors.MissingRequiredArgument):
-        await ctx.send(embed=generate_embed("Error", f"`{error} Run {prefix}help add_reminder`"))
+        await ctx.send(
+            embed=generate_embed("Error", f"`{error} Run {prefix}help add_reminder`")
+        )
     elif isinstance(error, commands.errors.UserInputError):
-        await ctx.send(embed=generate_embed("Error", f"`{error} Run {prefix}help add_reminder`"))
+        await ctx.send(
+            embed=generate_embed("Error", f"`{error} Run {prefix}help add_reminder`")
+        )
     elif isinstance(error, commands.errors.CheckFailure):
         await ctx.send(
-            embed=generate_embed("Error", "`You do not have permissions for this command`")
+            embed=generate_embed(
+                "Error", "`You do not have permissions for this command`"
+            )
         )
     else:
         await ctx.send(
             embed=generate_embed(
-                "Error", f"`An unexpected error has occured, run {prefix}help add_reminder`"
+                "Error",
+                f"`An unexpected error has occured, run {prefix}help add_reminder`",
             )
         )
 
@@ -202,15 +201,14 @@ async def search_reminders(ctx, date: Optional[str] = None):
             await ctx.send("Date was not in the correct format.")
             return 1
         db_search = database.get_reminders(
-            ctx.message.guild, **{"year": date["year"], "month": date["month"], "day": date["day"]}
+            ctx.message.guild,
+            **{"year": date["year"], "month": date["month"], "day": date["day"]},
         )
     else:
         db_search = database.get_reminders(ctx.message.guild)
     message = ""
     for reminder in db_search:
-        message += (
-            f'\n{reminder["_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}'
-        )
+        message += f'\n{reminder["_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}\n'
     if not message:
         message = "No reminders found"
     await ctx.send(embed=generate_embed("Search Results:", f"```{message}```"))
@@ -237,23 +235,32 @@ async def delete_reminder(ctx, index: int):
         delete_result = database.remove_reminder(search_result[0])
         if delete_result:
             await ctx.send(
-                embed=generate_embed("Deleted Reminder", "The reminder was successfully removed")
+                embed=generate_embed(
+                    "Deleted Reminder", "The reminder was successfully removed"
+                )
             )
         else:
             await ctx.send(embed=generate_embed("Error", "Something went wrong"))
     else:
-        await ctx.send(embed=generate_embed("Error", "Could not find a reminder at this index"))
+        await ctx.send(
+            embed=generate_embed("Error", "Could not find a reminder at this index")
+        )
+
 
 
 @delete_reminder.error
 async def delete_reminders_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send(
-            embed=generate_embed("Error", "`You do not have permissions for this command`")
+            embed=generate_embed(
+                "Error", "`You do not have permissions for this command`"
+            )
         )
     else:
         await ctx.send(
-            embed=generate_embed("Error", f"{error} Try running {prefix}help delete_reminder")
+            embed=generate_embed(
+                "Error", f"{error} Try running {prefix}help delete_reminder"
+            )
         )
 
 
