@@ -64,7 +64,7 @@ async def remind(reminder: dict):
         # Checks if the reminder is still scheduled, in case of deletion
         if reminder in scheduled_reminders:
             # Send the reminder text in the channel
-            await channel.send(f"```Reminder\n\n{reminder['reminder_text']}```")
+            await channel.send(f"Reminder:\n{reminder['reminder_text']}")
             # Remove the reminder
             database.remove_reminder(reminder)
     # Schedules a repeating reminder

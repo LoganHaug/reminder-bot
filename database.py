@@ -15,7 +15,7 @@ def get_new_id(guild):
 
 def is_unique_reminder(guild, new_doc):
     """Ensures that a new reminder will be unique"""
-    reminders = DB[guild].find({})
+    reminders = DB[guild + "_REMINDERS"].find({})
     for reminder in reminders:
         if reminder["reminder_text"] == new_doc["reminder_text"]:
             if reminder["date"] == new_doc["date"]:
