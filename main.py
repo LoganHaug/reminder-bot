@@ -12,7 +12,7 @@ import time
 from typing import Union, Optional
 
 import database
-from utils import generate_embed, is_administrator, split_date, split_time
+from utils import generate_embed, is_administrator, split_date, split_time, generate_graph
 
 
 # Grabs the bot token
@@ -116,7 +116,8 @@ async def setup_reminders():
 
 
 @REMINDER_BOT.command(
-    help="Date should be in month/day/year format, either with slashes or dashes (ex. month/day/year or month-day-year\n\nRepeating is an interval of time after which the reminder should be sent again, must be either daily, weekly, biweekly, or triweekly\n\nText is the text the reminder will be sent with, wrap with quotations if this contains whitespace"
+    help="Date should be in month/day/year format, either with slashes or dashes (ex. month/day/year or month-day-year\n\nRepeating is an interval of time after which the reminder should be sent again, must be either daily, weekly, biweekly, or triweekly\n\nText is the text the reminder will be sent with, wrap with quotations if this contains whitespace",
+    aliases=["reminder", "add_r", "ar"]
 )
 @commands.check(is_operator)
 async def add_reminder(
@@ -192,7 +193,7 @@ async def add_reminder_error(ctx, error):
         )
 
 
-@REMINDER_BOT.command()
+@REMINDER_BOT.command(aliases=["search", "search_r", "sr"])
 async def search_reminders(ctx, date: Optional[str] = None):
     """Searches for reminders on a specific day"""
     if date:
@@ -227,7 +228,7 @@ async def search_reminders_error(ctx, error):
 # TODO: update command
 
 
-@REMINDER_BOT.command()
+@REMINDER_BOT.command(aliases=["delete", "delete_r", "dr"])
 @commands.check(is_operator)
 async def delete_reminder(ctx, index: int):
     """Deletes a reminder at a specific index"""
@@ -265,7 +266,7 @@ async def delete_reminders_error(ctx, error):
         )
 
 
-@REMINDER_BOT.command()
+@REMINDER_BOT.command(aliases=["g"])
 async def graph(ctx):
     """Sends the graph"""
     file = discord.File("image.svg", filename="da_graph.svg")
@@ -277,6 +278,7 @@ async def on_ready():
     """Responds to when the bot readys"""
     # Setup the collections and reminders, print a status message
     asyncio.create_task(setup_reminders())
+    generate_graph()
     print(f"{REMINDER_BOT.user} connected to discord : )")
 
 
