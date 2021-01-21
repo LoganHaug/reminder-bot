@@ -1,6 +1,7 @@
 """Reminder Bot"""
 import discord
 from discord.ext import commands
+import pygal
 import pymongo
 import yaml
 
@@ -262,6 +263,13 @@ async def delete_reminders_error(ctx, error):
                 "Error", f"{error} Try running {prefix}help delete_reminder"
             )
         )
+
+
+@REMINDER_BOT.command()
+async def graph(ctx):
+    """Sends the graph"""
+    file = discord.File("image.svg", filename="da_graph.svg")
+    await ctx.send("", file=file)
 
 
 @REMINDER_BOT.event
