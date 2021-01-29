@@ -41,4 +41,4 @@ def generate_graph():
     xy_chart = pygal.XY(style=pygal.style.DarkColorizedStyle, x_title="gay", y_title="dumb")
     xy_chart.title = "Mckenna"
     xy_chart.add("heh", [(x, x) for x in range(0, 2)])
-    #xy_chart.render_to_file("image.svg")
+    xy_chart.render_to_file("image.svg")
