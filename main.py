@@ -67,7 +67,7 @@ async def remind(reminder: dict):
             database.remove_reminder(reminder)
     # Schedules a repeating reminder
     if reminder["repeating"]:
-        # Calculate when the next remidner should be
+        # Calculate when the next reminder should be
         reminder_date = datetime.datetime.fromtimestamp(
             reminder["date"] + conversion_dict[reminder["repeating"]]
         )
@@ -85,6 +85,7 @@ async def remind(reminder: dict):
             reminder["reminder_text"],
             reminder["repeating"],
         )
+        asyncio.create_task(setup_reminders())
     # Remove a reminder that has passed
     else:
         database.remove_reminder(reminder)
