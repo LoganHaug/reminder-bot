@@ -264,11 +264,6 @@ async def delete_reminders_error(ctx, error):
         )
 
 
-@REMINDER_BOT.command(aliases=["g"])
-async def graph(ctx):
-    """Sends the graph"""
-    file = discord.File("image.svg", filename="da_graph.svg")
-    await ctx.send("", file=file)
 
 
 @REMINDER_BOT.event
@@ -277,6 +272,7 @@ async def on_ready():
     # Setup the collections and reminders, print a status message
     asyncio.create_task(setup_reminders())
     utils.generate_graph()
+    REMINDER_BOT.load_extension("misc")
     print(f"{REMINDER_BOT.user} connected to discord : )")
 
 
