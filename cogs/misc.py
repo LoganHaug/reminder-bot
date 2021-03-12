@@ -17,6 +17,7 @@ class Misc(commands.Cog):
     @commands.command(aliases=["g"])
     async def graph(self, ctx):
         """Sends the graph"""
+        utils.generate_graph()
         file = discord.File("image.svg", filename="da_graph.svg")
         await ctx.send("", file=file)
 

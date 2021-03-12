@@ -1,18 +1,18 @@
-import discord
-from discord.ext import commands
-
 from typing import Optional
 
-import cogs.checks
+from discord.ext import commands
+
 import database
 import utils
 
+prefix = utils.get_prefix()
 
-class SearchReminder(commands.Cog):
+
+class Search(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["search", "search_r", "sr"])
+    @commands.command(aliases=["search", "search_r", "sr", "s"])
     async def search_reminders(self, ctx, date: Optional[str] = None):
         """Searches for reminders on a specific day"""
         if date:
@@ -37,7 +37,7 @@ class SearchReminder(commands.Cog):
         )
 
     @search_reminders.error
-    async def search_reminders_error(self, ctx, error):
+    async def search_reminders_error(self, ctx):
         await ctx.send(
             embed=utils.generate_embed(
                 "Error",
@@ -47,4 +47,4 @@ class SearchReminder(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(SearchReminder(bot))
+    bot.add_cog(Search(bot))

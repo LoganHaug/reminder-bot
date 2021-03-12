@@ -1,16 +1,17 @@
-import discord
 from discord.ext import commands
 
 from cogs.checks import is_operator
 import database
 import utils
 
+prefix = utils.get_prefix()
 
-class DeleteReminder(commands.Cog):
+
+class Delete(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["delete", "delete_r", "dr"])
+    @commands.command(aliases=["delete", "delete_r", "dr", "d"])
     @commands.check(is_operator)
     async def delete_reminder(self, ctx, index: int):
         """Deletes a reminder at a specific index"""
@@ -51,4 +52,4 @@ class DeleteReminder(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(DeleteReminder(bot))
+    bot.add_cog(Delete(bot))

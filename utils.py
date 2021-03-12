@@ -14,6 +14,10 @@ def generate_embed(title: str, desc: str):
     )
 
 
+def get_prefix():
+    return ">"
+
+
 def split_date(date: str):
     """Splits a string date into year, month, day, and hour"""
     if "-" in date:
