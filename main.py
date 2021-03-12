@@ -8,6 +8,7 @@ import datetime
 import time
 from typing import Union, Optional
 
+from cogs import checks
 import database
 import utils
 
@@ -30,25 +31,10 @@ prefix_func = commands.when_mentioned_or("{} ".format(prefix), prefix)
 REMINDER_BOT = commands.Bot(command_prefix=prefix_func)
 
 
-def is_operator(ctx):
-    """Returns whether the user of the context is an operator of the bot"""
-    return bool(
-        database.DB[f"{ctx.message.guild}_USERS"].find_one(
-            {"_id": ctx.message.author.id}
-        )
-    )
 
 
 
-@REMINDER_BOT.command()
-@commands.check(utils.is_administrator)
-async def add_operator(ctx, user):
-    database.insert_operator(ctx.message.guild, int(user[3:-1]))
-    await ctx.send(
-        embed=utils.generate_embed(
-            "Success, Operator added", f"Added user {user[3:-1]} as an operator"
-        )
-    )
+
 
 
 async def remind(reminder: dict):
@@ -115,9 +101,9 @@ async def setup_reminders():
 
 @REMINDER_BOT.command(
     help="Date should be in month/day/year format, either with slashes or dashes (ex. month/day/year or month-day-year\n\nRepeating is an interval of time after which the reminder should be sent again, must be either daily, weekly, biweekly, or triweekly\n\nText is the text the reminder will be sent with, wrap with quotations if this contains whitespace",
-    aliases=["reminder", "add_r", "ar"]
+    aliases=["reminder", "add_r", "ar"],
 )
-@commands.check(is_operator)
+@commands.check(checks.is_operator)
 async def add_reminder(
     ctx,
     date: str,
@@ -170,11 +156,15 @@ async def add_reminder_error(ctx, error):
     """Called when add_reminder() errors"""
     if isinstance(error, commands.errors.MissingRequiredArgument):
         await ctx.send(
-            embed=utils.generate_embed("Error", f"`{error} Run {prefix}help add_reminder`")
+            embed=utils.generate_embed(
+                "Error", f"`{error} Run {prefix}help add_reminder`"
+            )
         )
     elif isinstance(error, commands.errors.UserInputError):
         await ctx.send(
-            embed=utils.generate_embed("Error", f"`{error} Run {prefix}help add_reminder`")
+            embed=utils.generate_embed(
+                "Error", f"`{error} Run {prefix}help add_reminder`"
+            )
         )
     elif isinstance(error, commands.errors.CheckFailure):
         await ctx.send(
@@ -191,77 +181,9 @@ async def add_reminder_error(ctx, error):
         )
 
 
-@REMINDER_BOT.command(aliases=["search", "search_r", "sr"])
-async def search_reminders(ctx, date: Optional[str] = None):
-    """Searches for reminders on a specific day"""
-    if date:
-        try:
-            date = utils.split_date(date)
-        except UnboundLocalError:
-            await ctx.send("Date was not in the correct format.")
-            return 1
-        db_search = database.get_reminders(
-            ctx.message.guild,
-            **{"year": date["year"], "month": date["month"], "day": date["day"]},
-        )
-    else:
-        db_search = database.get_reminders(ctx.message.guild)
-    message = ""
-    for reminder in db_search:
-        message += f'\n{reminder["_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}\n'
-    if not message:
-        message = "No reminders found"
-    await ctx.send(embed=utils.generate_embed("Search Results:", f"```{message}```"))
-
-
-@search_reminders.error
-async def search_reminders_error(ctx, error):
-    await ctx.send(
-        embed=utils.generate_embed(
-            "Error", f"Something went wrong, try running {prefix}help search_reminders"
-        )
-    )
-
-
-# TODO: update command
-
-
-@REMINDER_BOT.command(aliases=["delete", "delete_r", "dr"])
-@commands.check(is_operator)
-async def delete_reminder(ctx, index: int):
-    """Deletes a reminder at a specific index"""
-    search_result = database.get_reminders(ctx.message.guild, **{"_id": index})
-    if search_result != []:
-        delete_result = database.remove_reminder(search_result[0])
-        if delete_result:
-            await ctx.send(
-                embed=utils.generate_embed(
-                    "Deleted Reminder", "The reminder was successfully removed"
-                )
-            )
-        else:
-            await ctx.send(embed=utils.generate_embed("Error", "Something went wrong"))
-    else:
-        await ctx.send(
-            embed=utils.generate_embed("Error", "Could not find a reminder at this index")
-        )
 
 
 
-@delete_reminder.error
-async def delete_reminders_error(ctx, error):
-    if isinstance(error, commands.errors.CheckFailure):
-        await ctx.send(
-            embed=utils.generate_embed(
-                "Error", "`You do not have permissions for this command`"
-            )
-        )
-    else:
-        await ctx.send(
-            embed=utils.generate_embed(
-                "Error", f"{error} Try running {prefix}help delete_reminder"
-            )
-        )
 
 
 
@@ -272,7 +194,11 @@ async def on_ready():
     # Setup the collections and reminders, print a status message
     asyncio.create_task(setup_reminders())
     utils.generate_graph()
-    REMINDER_BOT.load_extension("misc")
+    with open("extensions.yml", "r") as extensions_file:
+        extensions_file = yaml.load(extensions_file, Loader=yaml.Loader)
+        for cog in extensions_file:
+            REMINDER_BOT.load_extension(cog)
+            print(f"Loaded cog {cog}")
     print(f"{REMINDER_BOT.user} connected to discord : )")
 
 

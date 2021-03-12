@@ -3,6 +3,7 @@
 import discord
 import pygal
 
+
 def generate_embed(title: str, desc: str):
     return discord.Embed(
         **{
@@ -11,10 +12,6 @@ def generate_embed(title: str, desc: str):
             "color": discord.Color(0).dark_magenta(),
         }
     )
-
-
-def is_administrator(ctx):
-    return ctx.message.author.id == 322158695184203777
 
 
 def split_date(date: str):
@@ -38,7 +35,9 @@ def split_time(time: str):
 
 def generate_graph():
     """Generates "the graph" """
-    xy_chart = pygal.XY(style=pygal.style.DarkColorizedStyle, x_title="gay", y_title="dumb")
+    xy_chart = pygal.XY(
+        style=pygal.style.DarkColorizedStyle, x_title="gay", y_title="dumb"
+    )
     xy_chart.title = "Mckenna"
     xy_chart.add("heh", [(x, x) for x in range(0, 2)])
     xy_chart.render_to_file("image.svg")
