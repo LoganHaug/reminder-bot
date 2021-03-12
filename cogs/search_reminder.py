@@ -7,9 +7,11 @@ import cogs.checks
 import database
 import utils
 
+
 class SearchReminder(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
     @commands.command(aliases=["search", "search_r", "sr"])
     async def search_reminders(self, ctx, date: Optional[str] = None):
         """Searches for reminders on a specific day"""
@@ -30,16 +32,19 @@ class SearchReminder(commands.Cog):
             message += f'\n{reminder["_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}\n'
         if not message:
             message = "No reminders found"
-        await ctx.send(embed=utils.generate_embed("Search Results:", f"```{message}```"))
-
+        await ctx.send(
+            embed=utils.generate_embed("Search Results:", f"```{message}```")
+        )
 
     @search_reminders.error
     async def search_reminders_error(self, ctx, error):
         await ctx.send(
             embed=utils.generate_embed(
-                "Error", f"Something went wrong, try running {prefix}help search_reminders"
+                "Error",
+                f"Something went wrong, try running {prefix}help search_reminders",
             )
         )
+
 
 def setup(bot):
     bot.add_cog(SearchReminder(bot))

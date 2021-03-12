@@ -24,14 +24,15 @@ class DeleteReminder(commands.Cog):
                     )
                 )
             else:
-                await ctx.send(embed=utils.generate_embed("Error", "Something went wrong"))
+                await ctx.send(
+                    embed=utils.generate_embed("Error", "Something went wrong")
+                )
         else:
             await ctx.send(
                 embed=utils.generate_embed(
                     "Error", "Could not find a reminder at this index"
                 )
             )
-
 
     @delete_reminder.error
     async def delete_reminders_error(self, ctx, error):
@@ -47,6 +48,7 @@ class DeleteReminder(commands.Cog):
                     "Error", f"{error} Try running {prefix}help delete_reminder"
                 )
             )
+
 
 def setup(bot):
     bot.add_cog(DeleteReminder(bot))

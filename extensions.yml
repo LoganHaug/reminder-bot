@@ -1,4 +1,4 @@
-- cogs.admin
-- cogs.delete_reminder
-- cogs.misc
-- cogs.search_reminder
+-cogs.admin
+-cogs.delete_reminder
+-cogs.misc
+-cogs.search_reminder

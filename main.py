@@ -31,12 +31,6 @@ prefix_func = commands.when_mentioned_or("{} ".format(prefix), prefix)
 REMINDER_BOT = commands.Bot(command_prefix=prefix_func)
 
 
-
-
-
-
-
-
 async def remind(reminder: dict):
     """Execute one reminder"""
     # Check if the reminder is in the future
@@ -179,13 +173,6 @@ async def add_reminder_error(ctx, error):
                 f"`An unexpected error has occured, run {prefix}help add_reminder`",
             )
         )
-
-
-
-
-
-
-
 
 
 @REMINDER_BOT.event
