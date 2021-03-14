@@ -23,44 +23,49 @@ class Remind(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.scheduled_reminders = []
+    
+    async def update_schedule(self):
+        """Updates the schedule"""
+        reminders = database.get_reminders()
+        new_schedule = []
+        for reminder in reminders:
+            if reminder["date"] - time.time() < 0:
+                database.remove_reminder(reminder)
+            else:
+                new_schedule.append(reminder)
+            self.scheduled_reminders.clear()
+            self.scheduled_reminders.extend(new_schedule)
 
     async def setup_reminders(self):
         """Sets up the reminders"""
-
-        reminders = database.get_reminders()
-        new_schedule = []
-        for scheduled_reminder in self.scheduled_reminders:
-            if scheduled_reminder in reminders:
-                new_schedule.append(scheduled_reminder)
-        self.scheduled_reminders.clear()
-        self.scheduled_reminders.extend(new_schedule)
+        await self.update_schedule()
         # Stores all the reminder tasks
         tasks = []
         # Create tasks for all reminders, call the remind function
-        for reminder in reminders:
-            # If the current reminder is not scheduled, schedule it
-            if reminder not in self.scheduled_reminders:
-                self.scheduled_reminders.append(reminder)
-                tasks.append(asyncio.create_task(self.remind(reminder)))
+        for reminder in self.scheduled_reminders:
+            tasks.append(asyncio.create_task(self.remind(reminder)))
         # Run the tasks
         asyncio.gather(*tasks)
 
     async def remind(self, reminder: dict):
         """Execute one reminder"""
-        # Check if the reminder is in the future
-        if reminder["date"] - time.time() > 0:
-            # Get the channel object to send the message
-            channel = self.bot.get_channel(reminder["channel"])
-            # Wait until the reminder should go off
+        # Check if the reminder is in the future and if it exists in the database
+        if reminder["date"] - time.time() > 0 and database.get_reminders(**reminder) != []:
             await asyncio.sleep(reminder["date"] - time.time())
-            # Checks if the reminder is still scheduled, in case of deletion
-            if reminder in self.scheduled_reminders:
-                # Send the reminder text in the channel
-                await channel.send(f"Reminder:\n{reminder['reminder_text']}")
-                # Remove the reminder
-                database.remove_reminder(reminder)
-        # Schedules a repeating reminder
-        if reminder["repeating"]:
+            # Checks if the reminder is still exists, in case of deletion
+            if database.get_reminders(**reminder) != [] and reminder in self.scheduled_reminders:
+                if reminder["repeating"] != False:
+                    asyncio.create_task(self.schedule_repeat(reminder))
+                await self.bot.get_channel(reminder["channel"]).send(f"Reminder:\n{reminder['reminder_text']}")
+            # Remove the reminder
+            database.remove_reminder(reminder)
+        # Remove a reminder that has passed
+        else:
+            database.remove_reminder(reminder)
+    
+    async def schedule_repeat(self, reminder: dict):
+        """Schedules a repeating reminder"""
+        if reminder["repeating"] and database.get_reminders(**reminder) != []:
             # Calculate when the next reminder should be
             reminder_date = datetime.datetime.fromtimestamp(
                 reminder["date"] + conversion_dict[reminder["repeating"]]
@@ -80,9 +85,6 @@ class Remind(commands.Cog):
                 reminder["repeating"],
             )
             asyncio.create_task(self.setup_reminders())
-        # Remove a reminder that has passed
-        else:
-            database.remove_reminder(reminder)
 
     @commands.command(
         help="Date should be in month/day/year format, either with slashes or dashes (ex. month/day/year or month-day-year\n\nRepeating is an interval of time after which the reminder should be sent again, must be either daily, weekly, biweekly, or triweekly\n\nText is the text the reminder will be sent with, wrap with quotations if this contains whitespace",
