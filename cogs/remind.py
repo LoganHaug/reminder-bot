@@ -22,30 +22,34 @@ prefix = utils.get_prefix()
 class Remind(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.scheduled_reminders = []
+        self.reminders = []
+        self.tasks = []
+        asyncio.create_task(self.update_schedule())
     
     async def update_schedule(self):
         """Updates the schedule"""
         reminders = database.get_reminders()
-        new_schedule = []
+        new_reminders = []
         for reminder in reminders:
             if reminder["date"] - time.time() < 0:
                 database.remove_reminder(reminder)
             else:
-                new_schedule.append(reminder)
-            self.scheduled_reminders.clear()
-            self.scheduled_reminders.extend(new_schedule)
+                new_reminders.append(reminder)
+            self.reminders.clear()
+            self.reminders.extend(new_reminders)
 
     async def setup_reminders(self):
         """Sets up the reminders"""
         await self.update_schedule()
-        # Stores all the reminder tasks
-        tasks = []
+        scheduled_reminders = [task.get_coro().cr_frame.f_locals["reminder"] for task in self.tasks]
         # Create tasks for all reminders, call the remind function
-        for reminder in self.scheduled_reminders:
-            tasks.append(asyncio.create_task(self.remind(reminder)))
+        for reminder in self.reminders:
+            if reminder not in scheduled_reminders:
+                task = asyncio.create_task(self.remind(reminder))
+                self.tasks.append(task)
+                scheduled_reminders.append(task.get_coro().cr_frame.f_locals["reminder"])
         # Run the tasks
-        asyncio.gather(*tasks)
+        asyncio.gather(*self.tasks)
 
     async def remind(self, reminder: dict):
         """Execute one reminder"""
@@ -53,10 +57,11 @@ class Remind(commands.Cog):
         if reminder["date"] - time.time() > 0 and database.get_reminders(**reminder) != []:
             await asyncio.sleep(reminder["date"] - time.time())
             # Checks if the reminder is still exists, in case of deletion
-            if database.get_reminders(**reminder) != [] and reminder in self.scheduled_reminders:
+            if database.get_reminders(**reminder) != [] and reminder in self.reminders:
+                await self.bot.get_channel(reminder["channel"]).send(f"Reminder:\n{reminder['reminder_text']}")
                 if reminder["repeating"] != False:
                     asyncio.create_task(self.schedule_repeat(reminder))
-                await self.bot.get_channel(reminder["channel"]).send(f"Reminder:\n{reminder['reminder_text']}")
+                self.reminders.remove(reminder)
             # Remove the reminder
             database.remove_reminder(reminder)
         # Remove a reminder that has passed
@@ -122,7 +127,7 @@ class Remind(commands.Cog):
         )
         # Sends a status message, and restarts the reminders
         if result:
-            asyncio.create_task(self.setup_reminders())
+            await asyncio.create_task(self.setup_reminders())
             await ctx.send(
                 embed=utils.generate_embed(
                     "Reminder Stored",

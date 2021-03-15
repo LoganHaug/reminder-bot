@@ -25,7 +25,7 @@ async def on_ready():
         extensions_file = yaml.load(extensions_file, Loader=yaml.Loader)
         for cog in extensions_file:
             REMINDER_BOT.load_extension(cog)
-            print(f"Loaded cog {cog}")
+            print(f"Loaded {cog}")
     print(f"{REMINDER_BOT.user} connected to discord : )")
 
 
