@@ -60,7 +60,7 @@ class Remind(commands.Cog):
             if database.get_reminders(**reminder) != [] and reminder in self.reminders:
                 await self.bot.get_channel(reminder["channel"]).send(f"Reminder:\n{reminder['reminder_text']}")
                 if reminder["repeating"] != False:
-                    asyncio.create_task(self.schedule_repeat(reminder))
+                    await self.schedule_repeat(reminder)
                 self.reminders.remove(reminder)
             # Remove the reminder
             database.remove_reminder(reminder)
