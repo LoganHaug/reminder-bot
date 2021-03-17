@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+import database
 import utils
 
 
@@ -20,6 +21,24 @@ class Misc(commands.Cog):
         utils.generate_graph()
         file = discord.File("image.svg", filename="da_graph.svg")
         await ctx.send("", file=file)
+
+    @commands.command(aliases=["pet"])
+    async def pat(self, ctx):
+        """Pats the reminder bot, or a user"""
+        if len(ctx.message.mentions) >= 2:
+            pats = database.increment_pat(ctx.guild.name, ctx.message.mentions[1].id)
+            user = ctx.message.mentions[1].name
+        else:
+            pats = database.increment_pat(ctx.guild.name, self.bot.user.id)
+            user = self.bot.user.name
+        if pats == 1:
+            await ctx.send(
+                embed=utils.generate_embed("💜", f"{user} has received {pats} pat")
+            )
+        else:
+            await ctx.send(
+                embed=utils.generate_embed("💜", f"{user} has received {pats} pats")
+            )
 
 
 def setup(bot):

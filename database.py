@@ -53,6 +53,20 @@ def insert_operator(guild, user_id):
     return DB[f"{guild}_USERS"].insert_one({"_id": user_id}).acknowledged
 
 
+def increment_pat(guild, user_id):
+    """Increments the number of pats for a user"""
+    user = DB[f"{guild}_USERS"].find_one({"_id": user_id})
+    if user is None:
+        DB[f"{guild}_USERS"].insert_one({"_id": user_id, "pats": 1})
+        return 1
+    if "pats" in user.keys():
+        DB[f"{guild}_USERS"].update(user, {"$inc": {"pats": 1}})
+        return user["pats"] + 1
+    elif user is not None:
+        DB[f"{guild}_USERS"].update(user, {"_id": user_id, "pats": 1})
+        return 1
+
+
 def remove_reminder(reminder: dict):
     """Removes a reminder"""
     return DB[f'{reminder["guild"]}_REMINDERS'].delete_one(reminder).acknowledged
