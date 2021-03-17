@@ -25,9 +25,9 @@ class Misc(commands.Cog):
     @commands.command(aliases=["pet"])
     async def pat(self, ctx):
         """Pats the reminder bot, or a user"""
-        if len(ctx.message.mentions) >= 2:
-            pats = database.increment_pat(ctx.guild.name, ctx.message.mentions[1].id)
-            user = ctx.message.mentions[1].name
+        if len(ctx.message.mentions) >= 1:
+            pats = database.increment_pat(ctx.guild.name, ctx.message.mentions[-1].id)
+            user = ctx.message.mentions[-1].name
         else:
             pats = database.increment_pat(ctx.guild.name, self.bot.user.id)
             user = self.bot.user.name
