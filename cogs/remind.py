@@ -40,8 +40,12 @@ class Remind(commands.Cog):
 
     async def setup_reminders(self):
         """Sets up the reminders"""
+        await self.clear_tasks()
         await self.update_schedule()
-        scheduled_reminders = [task.get_coro().cr_frame.f_locals["reminder"] for task in self.tasks]
+        scheduled_reminders = []
+        for task in self.tasks:
+            if task.get_coro().cr_frame is not None:
+                scheduled_reminders.append(task.get_coro().cr_frame.f_locals["reminder"])
         # Create tasks for all reminders, call the remind function
         for reminder in self.reminders:
             if reminder not in scheduled_reminders:
@@ -50,11 +54,16 @@ class Remind(commands.Cog):
                 scheduled_reminders.append(task.get_coro().cr_frame.f_locals["reminder"])
         # Run the tasks
         asyncio.gather(*self.tasks)
+    
+    async def clear_tasks(self):
+        for task in self.tasks:
+            if task._state == "FINISHED":
+                self.tasks.remove(task)
 
     async def remind(self, reminder: dict):
         """Execute one reminder"""
         # Check if the reminder is in the future and if it exists in the database
-        if reminder["date"] - time.time() > 0 and database.get_reminders(**reminder) != []:
+        if reminder["date"] > time.time() and database.get_reminders(**reminder) != []:
             await asyncio.sleep(reminder["date"] - time.time())
             # Checks if the reminder is still exists, in case of deletion
             if database.get_reminders(**reminder) != [] and reminder in self.reminders:
@@ -146,6 +155,7 @@ class Remind(commands.Cog):
     @add_reminder.error
     async def add_reminder_error(self, ctx, error):
         """Called when add_reminder() errors"""
+        await ctx.send(error)
         if isinstance(error, commands.errors.MissingRequiredArgument):
             await ctx.send(
                 embed=utils.generate_embed(
