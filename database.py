@@ -48,12 +48,12 @@ def insert_reminder(
     return DB[f"{guild}_REMINDERS"].insert_one(new_doc).acknowledged
 
 
-def insert_operator(guild, user_id):
+def insert_operator(guild: str, user_id: int) -> None:
     """Inserts a document of a user that is an adminstrator"""
     return DB[f"{guild}_USERS"].insert_one({"_id": user_id}).acknowledged
 
 
-def increment_pat(guild, user_id):
+def increment_pat(guild: str, user_id: int) -> int:
     """Increments the number of pats for a user"""
     user = DB[f"{guild}_USERS"].find_one({"_id": user_id})
     if user is None:
@@ -72,7 +72,7 @@ def remove_reminder(reminder: dict):
     return DB[f'{reminder["guild"]}_REMINDERS'].delete_one(reminder).acknowledged
 
 
-def get_reminders(guild=None, **query):
+def get_reminders(guild: str=None, **query: dict) -> dict:
     """Returns a list of reminders to send messages for"""
     reminders = []
     if guild:
@@ -84,3 +84,7 @@ def get_reminders(guild=None, **query):
                 for reminder in DB[collection].find(query):
                     reminders.append(reminder)
     return reminders
+
+def award_karma(guild: str, user: int, karma: int) -> None:
+    """Awards karma to a user in a guild"""
+    DB[f"{guild}_USERS"].update({"_id": user}, {"$inc": {"karma": karma}}, upsert=True)
