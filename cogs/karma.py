@@ -3,6 +3,7 @@ from discord.ext import commands
 from pymongo import DESCENDING
 
 import database
+import utils
 
 from typing import Optional
 
@@ -16,19 +17,27 @@ class Karma(commands.Cog):
         message = await channel.fetch_message(payload.message_id)
         # Upvote
         if payload.emoji.name == "👎":
-            database.award_karma(message.guild.name, message.author.id, -1)
+            database.award_karma(message, -1)
         # Downvote
         elif payload.emoji.name == "👍":
-            database.award_karma(message.guild.name, message.author.id, 1)
+            database.award_karma(message, 1)
 
     @commands.command(aliases=["lt", "l_t", "thumbers"])
     async def list_thumbers(self, ctx, user: Optional[str]) -> None:
-        karma = database.DB[f"{ctx.message.guild.name}_USERS"].find().sort("karma", DESCENDING).limit(5)
-        message = "User\t\t# of Thumbers"
-        for user in karma:
-            if "karma" in user.keys():
-                message += f'\n{self.bot.get_user(user["_id"])}\t{user["karma"]}'
-        await ctx.send(message)
+        """Lists the number of thumbers for a user or the top 5 on the server"""
+        if user and len(ctx.message.mentions) >= 1:
+            user = database.DB[f"{ctx.message.guild.name}_USERS"].find_one({"_id": ctx.message.mentions[-1].id})
+            if user and "karma" in user.keys():
+                await ctx.send(embed=utils.generate_embed(f"{user['name']} has {user['karma']} thumbers", ""))
+            else:
+                await ctx.send(embed=utils.generate_embed(f"{ctx.message.mentions[-1].name} has no thumbers", ""))
+        else:
+            karma = database.DB[f"{ctx.message.guild.name}_USERS"].find().sort("karma", DESCENDING).limit(5)
+            message = ""
+            for user in karma:
+                if "karma" in user.keys():
+                    message += f'\n{user["karma"]} {user["name"]}'
+            await ctx.send(embed=utils.generate_embed("# of Thumbers   User", message))
  
 def setup(bot):
     bot.add_cog(Karma(bot))

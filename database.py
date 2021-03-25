@@ -85,6 +85,6 @@ def get_reminders(guild: str=None, **query: dict) -> dict:
                     reminders.append(reminder)
     return reminders
 
-def award_karma(guild: str, user: int, karma: int) -> None:
+def award_karma(message, karma: int) -> None:
     """Awards karma to a user in a guild"""
-    DB[f"{guild}_USERS"].update({"_id": user}, {"$inc": {"karma": karma}}, upsert=True)
+    DB[f"{message.guild.name}_USERS"].update({"_id": message.author.id}, {"$inc": {"karma": karma}, "$set": {"name": message.author.name}}, upsert=True)
