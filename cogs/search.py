@@ -22,7 +22,7 @@ class Search(commands.Cog):
                 await ctx.send(embed=utils.generate_embed("", "Date was not in the correct format."))
                 return 1
             db_search = database.get_reminders(
-                ctx.message.guild.name,
+                ctx.message.guild.id,
                 **{"year": date["year"], "month": date["month"], "day": date["day"]},
             )
         else:

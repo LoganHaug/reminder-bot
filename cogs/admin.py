@@ -12,6 +12,7 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.check(checks.is_administrator)
     async def add_operator(self, ctx, user):
+        """Adds an operator to the database"""
         database.insert_operator(ctx.message.guild.id, int(user[3:-1]))
         await ctx.send(
             embed=utils.generate_embed(
