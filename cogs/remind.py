@@ -25,7 +25,7 @@ class Remind(commands.Cog):
         self.reminders = []
         self.tasks = []
         asyncio.create_task(self.update_schedule())
-    
+
     async def update_schedule(self):
         """Updates the schedule"""
         reminders = database.get_reminders()
@@ -54,7 +54,7 @@ class Remind(commands.Cog):
                 scheduled_reminders.append(task.get_coro().cr_frame.f_locals["reminder"])
         # Run the tasks
         asyncio.gather(*self.tasks)
-    
+
     async def clear_tasks(self):
         for task in self.tasks:
             if task._state == "FINISHED":
@@ -76,7 +76,7 @@ class Remind(commands.Cog):
         # Remove a reminder that has passed
         else:
             database.remove_reminder(reminder)
-    
+
     async def schedule_repeat(self, reminder: dict):
         """Schedules a repeating reminder"""
         if reminder["repeating"] and database.get_reminders(**reminder) != []:
@@ -101,7 +101,7 @@ class Remind(commands.Cog):
             asyncio.create_task(self.setup_reminders())
 
     @commands.command(
-        help="Date should be in month/day/year format, either with slashes or dashes (ex. month/day/year or month-day-year\n\nRepeating is an interval of time after which the reminder should be sent again, must be either daily, weekly, biweekly, or triweekly\n\nText is the text the reminder will be sent with, wrap with quotations if this contains whitespace",
+        help="Date should be in month/day/year format, either with slashes or dashes (ex. month/day/year or month-day-year)\n\nRepeating is an interval of time after which the reminder should be sent again, must be either daily, weekly, biweekly, or triweekly\n\nText is the text the reminder will be sent with, wrap with quotations if this contains whitespace",
         aliases=["reminder", "add_r", "ar"],
     )
     @commands.check(checks.is_operator)
@@ -124,7 +124,7 @@ class Remind(commands.Cog):
             raise commands.UserInputError()
         # Tries to insert the reminder
         result = database.insert_reminder(
-            ctx.guild.name,
+            ctx.guild.id,
             ctx.channel.id,
             _date["year"],
             _date["month"],
@@ -155,7 +155,7 @@ class Remind(commands.Cog):
     @add_reminder.error
     async def add_reminder_error(self, ctx, error):
         """Called when add_reminder() errors"""
-        await ctx.send(error)
+        print(error)
         if isinstance(error, commands.errors.MissingRequiredArgument):
             await ctx.send(
                 embed=utils.generate_embed(
