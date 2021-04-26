@@ -26,18 +26,18 @@ class Karma(commands.Cog):
     async def list_thumbers(self, ctx, user: Optional[str]) -> None:
         """Lists the number of thumbers for a user or the top 5 on the server"""
         if user and len(ctx.message.mentions) >= 1:
-            user = database.DB[f"{ctx.message.guild.name}_USERS"].find_one({"_id": ctx.message.mentions[-1].id})
+            user = database.DB[str(ctx.message.guild.id)].find_one({"_id": ctx.message.mentions[-1].id})
             if user and "karma" in user.keys():
                 await ctx.send(embed=utils.generate_embed(f"{user['name']} has {user['karma']} thumbers", ""))
             else:
                 await ctx.send(embed=utils.generate_embed(f"{ctx.message.mentions[-1].name} has no thumbers", ""))
         else:
-            karma = database.DB[f"{ctx.message.guild.name}_USERS"].find().sort("karma", DESCENDING).limit(5)
+            karma = database.DB[str(ctx.message.guild.id)].find().sort("karma", DESCENDING).limit(5)
             message = ""
             for user in karma:
                 if "karma" in user.keys():
                     message += f'\n{user["karma"]} {user["name"]}'
             await ctx.send(embed=utils.generate_embed("# of Thumbers   User", message))
- 
+
 def setup(bot):
     bot.add_cog(Karma(bot))

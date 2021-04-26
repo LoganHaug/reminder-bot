@@ -19,17 +19,17 @@ class Search(commands.Cog):
             try:
                 date = utils.split_date(date)
             except UnboundLocalError:
-                await ctx.send("Date was not in the correct format.")
+                await ctx.send(embed=utils.generate_embed("", "Date was not in the correct format."))
                 return 1
             db_search = database.get_reminders(
-                ctx.message.guild,
+                ctx.message.guild.id,
                 **{"year": date["year"], "month": date["month"], "day": date["day"]},
             )
         else:
-            db_search = database.get_reminders(ctx.message.guild)
+            db_search = database.get_reminders(ctx.message.guild.id)
         message = ""
         for reminder in db_search:
-            message += f'\n{reminder["_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}\n'
+            message += f'\n{reminder["reminder_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}\n'
         if not message:
             message = "No reminders found"
         await ctx.send(
@@ -37,11 +37,11 @@ class Search(commands.Cog):
         )
 
     @search_reminders.error
-    async def search_reminders_error(self, ctx):
+    async def search_reminders_error(self, ctx, error):
         await ctx.send(
-            embed=utils.generate_embed(
-                "Error",
-                f"Something went wrong, try running {prefix}help search_reminders",
+        embed=utils.generate_embed(
+            "Error",
+            f"Something went wrong, try running {prefix}help search_reminders",
             )
         )
 

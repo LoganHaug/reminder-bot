@@ -26,10 +26,10 @@ class Misc(commands.Cog):
     async def pat(self, ctx):
         """Pats the reminder bot, or a user"""
         if len(ctx.message.mentions) >= 1:
-            pats = database.increment_pat(ctx.guild.name, ctx.message.mentions[-1].id)
+            pats = database.increment_pat(ctx.guild.id, ctx.message.mentions[-1].id)
             user = ctx.message.mentions[-1].name
         else:
-            pats = database.increment_pat(ctx.guild.name, self.bot.user.id)
+            pats = database.increment_pat(ctx.guild.id, self.bot.user.id)
             user = self.bot.user.name
         if pats == 1:
             await ctx.send(
