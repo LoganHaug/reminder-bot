@@ -15,7 +15,9 @@ class Delete(commands.Cog):
     @commands.check(is_operator)
     async def delete_reminder(self, ctx, index: int):
         """Deletes a reminder at a specific index"""
-        search_result = database.get_reminders(ctx.message.guild.id, **{"reminder_id": index})
+        search_result = database.get_reminders(
+            ctx.message.guild.id, **{"reminder_id": index}
+        )
         if search_result != []:
             delete_result = database.remove_reminder(search_result[0])
             if delete_result:

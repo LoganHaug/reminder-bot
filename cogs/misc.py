@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from PIL import Image
 
 import database
 import utils
@@ -19,8 +20,9 @@ class Misc(commands.Cog):
     async def graph(self, ctx):
         """Sends the graph"""
         utils.generate_graph()
-        file = discord.File("image.svg", filename="da_graph.svg")
-        await ctx.send("", file=file)
+        await ctx.send(
+            "", file=discord.File("img/image.svg", filename="img/da_graph.svg")
+        )
 
     @commands.command(aliases=["pet"])
     async def pat(self, ctx):
@@ -39,6 +41,40 @@ class Misc(commands.Cog):
             await ctx.send(
                 embed=utils.generate_embed("💜", f"{user} has received {pats} pats")
             )
+
+    @commands.command(aliases=["gr", "g_radia"])
+    async def gen_radia(self, ctx, date):
+        """Generates the World of Radia given a date
+
+        Enter a date with format Month-Day-Year or Month/Day/Year
+        ex. June 1st 2000 -> 06/01/2000 or 06-01-2000"""
+        date = utils.split_date(date)
+
+        if date is None:
+            ctx.send(embed=utils.generate_embed("Error", "Please enter a valid date"))
+        center = Image.open("img/background.png")
+
+        ringsFiles = [
+            "img/rings/ring6.png",
+            "img/rings/ring5.png",
+            "img/rings/ring4.png",
+            "img/rings/ring3.png",
+            "img/rings/ring2.png",
+            "img/rings/ring1.png",
+            "img/rings/ring0.png",
+        ]
+        ringSpeeds = [0.25, 1, -2, 1.5, 1, -2, 0]  # num rotations per year
+
+        dayOfYear = 360 * date["year"] + 30 * (date["month"] - 1) + date["day"] - 1
+
+        for ring in ringsFiles:
+            temp = Image.open(ring)
+            temp = temp.rotate(
+                angle=-ringSpeeds[ringsFiles.index(ring)] * 0.6 * dayOfYear
+            )  # 360 days per year
+            center.paste(temp, (0, 0), temp)
+        center.save("img/out.png")
+        await ctx.send(file=discord.File("img/out.png", filename="img/out.png"))
 
 
 def setup(bot):

@@ -19,7 +19,11 @@ class Search(commands.Cog):
             try:
                 date = utils.split_date(date)
             except UnboundLocalError:
-                await ctx.send(embed=utils.generate_embed("", "Date was not in the correct format."))
+                await ctx.send(
+                    embed=utils.generate_embed(
+                        "", "Date was not in the correct format."
+                    )
+                )
                 return 1
             db_search = database.get_reminders(
                 ctx.message.guild.id,
@@ -39,9 +43,9 @@ class Search(commands.Cog):
     @search_reminders.error
     async def search_reminders_error(self, ctx, error):
         await ctx.send(
-        embed=utils.generate_embed(
-            "Error",
-            f"Something went wrong, try running {prefix}help search_reminders",
+            embed=utils.generate_embed(
+                "Error",
+                f"Something went wrong, try running {prefix}help search_reminders",
             )
         )
 

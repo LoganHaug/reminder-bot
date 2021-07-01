@@ -73,7 +73,7 @@ def remove_reminder(reminder: dict):
     return DB[str(reminder["guild"])].delete_one(reminder).acknowledged
 
 
-def get_reminders(guild: str=None, **query: dict) -> dict:
+def get_reminders(guild: str = None, **query: dict) -> dict:
     """Returns a list of reminders to send messages for"""
     reminders = []
     query["type"] = "reminder"
@@ -86,6 +86,11 @@ def get_reminders(guild: str=None, **query: dict) -> dict:
                 reminders.append(reminder)
     return reminders
 
+
 def award_karma(message, karma: int) -> None:
     """Awards karma to a user in a guild"""
-    DB[str(message.guild.id)].update({"user_id": message.author.id, "type": "user"}, {"$inc": {"karma": karma}, "$set": {"name": message.author.name}}, upsert=True)
+    DB[str(message.guild.id)].update(
+        {"user_id": message.author.id, "type": "user"},
+        {"$inc": {"karma": karma}, "$set": {"name": message.author.name}},
+        upsert=True,
+    )
