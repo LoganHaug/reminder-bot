@@ -1,7 +1,6 @@
 """Holds some utility functions for reminder_bot"""
 
 import discord
-import pygal
 
 
 def generate_embed(title: str, desc: str):
@@ -36,12 +35,3 @@ def split_time(time: str):
     time = time.strip().split(":")
     return {"hour": int(time[0]), "minute": int(time[1])}
 
-
-def generate_graph():
-    """Generates "the graph" """
-    xy_chart = pygal.XY(
-        style=pygal.style.DarkColorizedStyle, x_title="gay", y_title="dumb"
-    )
-    xy_chart.title = "Mckenna"
-    xy_chart.add("heh", [(x, x) for x in range(0, 2)])
-    xy_chart.render_to_file("img/image.svg")

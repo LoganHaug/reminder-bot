@@ -1,6 +1,5 @@
 - cogs.admin
 - cogs.delete
-- cogs.karma
 - cogs.misc
 - cogs.remind
 - cogs.search
