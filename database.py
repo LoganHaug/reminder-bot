@@ -2,7 +2,7 @@ import datetime
 
 import sqlite3 
 
-DB = pymongo.MongoClient().reminder_bot_db
+DB = sqlite3.connect("reminder_bot.db") 
 
 
 def get_new_id(guild):
@@ -54,20 +54,6 @@ def insert_operator(guild: int, user_id: int) -> None:
     return DB[str(guild)].insert_one({"user_id": user_id, "type": "user"}).acknowledged
 
 
-def increment_pat(guild: int, user_id: int) -> int:
-    """Increments the number of pats for a user"""
-    user = DB[str(guild)].find_one({"user_id": user_id, "type": "user"})
-    if user is None:
-        DB[str(guild)].insert_one({"user_id": user_id, "type": "user", "pats": 1})
-        return 1
-    if "pats" in user.keys():
-        DB[str(guild)].update(user, {"$inc": {"pats": 1}})
-        return user["pats"] + 1
-    elif user is not None:
-        DB[str(guild)].update(user, {"user_id": user_id, "type": "user", "pats": 1})
-        return 1
-
-
 def remove_reminder(reminder: dict):
     """Removes a reminder"""
     return DB[str(reminder["guild"])].delete_one(reminder).acknowledged
@@ -86,11 +72,3 @@ def get_reminders(guild: str = None, **query: dict) -> dict:
                 reminders.append(reminder)
     return reminders
 
-
-def award_karma(message, karma: int) -> None:
-    """Awards karma to a user in a guild"""
-    DB[str(message.guild.id)].update(
-        {"user_id": message.author.id, "type": "user"},
-        {"$inc": {"karma": karma}, "$set": {"name": message.author.name}},
-        upsert=True,
-    )
