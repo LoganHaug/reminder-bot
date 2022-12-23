@@ -12,5 +12,4 @@ def is_operator(ctx):
     cursor = conn.cursor()
     user = cursor.execute("SELECT * from users").fetchall()
     conn.close()
-    print(user)
     return user != []
