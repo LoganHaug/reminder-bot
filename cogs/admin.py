@@ -14,12 +14,12 @@ class Admin(commands.Cog):
     async def add_operator(self, ctx, user):
         """Adds an operator to the database"""
         database.insert_operator(ctx.message.guild.id, int(user[3:-1]))
-        await ctx.send(
+        await ctx.reply(
             embed=utils.generate_embed(
                 "Success, Operator added", f"Added user {user[3:-1]} as an operator"
             )
         )
 
 
-def setup(bot):
-    bot.add_cog(Admin(bot))
+async def setup(bot):
+    await bot.add_cog(Admin(bot))

@@ -189,7 +189,7 @@ class Remind(commands.Cog):
             )
 
 
-def setup(bot):
+async def setup(bot):
     cog = Remind(bot)
-    bot.add_cog(cog)
+    await bot.add_cog(cog)
     asyncio.create_task(cog.setup_reminders())
