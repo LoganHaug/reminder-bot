@@ -1,4 +1,5 @@
 import database
+import sqlite3
 
 
 def is_administrator(ctx):
@@ -7,8 +8,9 @@ def is_administrator(ctx):
 
 def is_operator(ctx):
     """Returns whether the user of the context is an operator of the bot"""
-    return bool(
-        database.DB[str(ctx.message.guild.id)].find_one(
-            {"user_id": ctx.message.author.id, "type": "user"}
-        )
-    )
+    conn = sqlite3.connect("reminder_bot.db")
+    cursor = conn.cursor()
+    user = cursor.execute("SELECT * from users").fetchall()
+    conn.close()
+    print(user)
+    return user != []

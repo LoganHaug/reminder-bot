@@ -34,4 +34,3 @@ def split_time(time: str):
     """Splits a string time into hour and minute"""
     time = time.strip().split(":")
     return {"hour": int(time[0]), "minute": int(time[1])}
-

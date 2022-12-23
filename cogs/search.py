@@ -42,6 +42,8 @@ class Search(commands.Cog):
 
     @search_reminders.error
     async def search_reminders_error(self, ctx, error):
+        print(error)
+        print(type(error))
         await ctx.send(
             embed=utils.generate_embed(
                 "Error",
