@@ -85,7 +85,7 @@ class Remind(commands.Cog):
 
     async def schedule_repeat(self, reminder: dict):
         """Schedules a repeating reminder"""
-        if reminder["repeating"] and database.get_reminders(**reminder) != []:
+        if reminder["repeating"] is not False and database.get_reminders(**reminder) != []:
             # Calculate when the next reminder should be
             reminder_date = datetime.datetime.fromtimestamp(
                 reminder["date"] + conversion_dict[reminder["repeating"]]

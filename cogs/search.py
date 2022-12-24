@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from discord.ext import commands
@@ -18,8 +19,9 @@ class Search(commands.Cog):
         if date:
             try:
                 date = utils.split_date(date)
+                date = datetime(date["year"], date["month"], date["day"]).timestamp()
             except UnboundLocalError:
-                await ctx.send(
+                await ctx.reply(
                     embed=utils.generate_embed(
                         "", "Date was not in the correct format."
                     )
@@ -27,24 +29,29 @@ class Search(commands.Cog):
                 return 1
             db_search = database.get_reminders(
                 ctx.message.guild.id,
-                **{"year": date["year"], "month": date["month"], "day": date["day"]},
+                **{"date": date},
             )
         else:
             db_search = database.get_reminders(ctx.message.guild.id)
         message = ""
         for reminder in db_search:
-            message += f'\n{reminder["reminder_id"]}\t{reminder["human_readable_time"]}\t{reminder["reminder_text"]}\n'
+            d = datetime.fromtimestamp((reminder["date"])).strftime("%Y-%m-%d %H:%M:%S")
+            message += f'\n{reminder["reminder_id"]}\t{d}\t{reminder["reminder_text"]}\n'
         if not message:
             message = "No reminders found"
-        await ctx.send(
+        await ctx.reply(
             embed=utils.generate_embed("Search Results:", f"```{message}```")
         )
 
     @search_reminders.error
     async def search_reminders_error(self, ctx, error):
+        import traceback
+        import sys
+        traceback.print_exc(file=sys.stdout())
         print(error)
         print(type(error))
-        await ctx.send(
+        
+        await ctx.reply(
             embed=utils.generate_embed(
                 "Error",
                 f"Something went wrong, try running {prefix}help search_reminders",

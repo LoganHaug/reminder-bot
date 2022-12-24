@@ -24,7 +24,7 @@ with closing(connect("reminder_bot.db")) as conn:
                            date INTEGER,
                            channel INTEGER,
                            reminder_text TEXT,
-                           repeating INTEGER,
+                           repeating TEXT,
                            guild INTEGER);"""
         )
     conn.commit()
@@ -32,10 +32,10 @@ with closing(connect("reminder_bot.db")) as conn:
 
 def _create_where_query(doc):
     # this is a security risk
-    query = "WHERE "
-    for key, value in doc:
-        query.append(f"{str(key)}={str(value)}, ")
-    return query[:-2]
+    query = "WHERE ("
+    for key in doc:
+        query += f"{str(key)}={str(doc[key])}, "
+    return query[:-2] + ")"
 
 
 def _is_unique_reminder(guild, new_doc):
@@ -108,7 +108,7 @@ def insert_reminder(
             c.execute(
                 f'''INSERT INTO reminders 
                               (date, channel, reminder_text, repeating, guild)
-                              VALUES ({nr['date']}, {nr['channel']}, '{nr['reminder_text']}', {nr['repeating']}, {nr['guild']});'''
+                              VALUES ({nr['date']}, {nr['channel']}, '{nr['reminder_text']}', '{nr['repeating']}', {nr['guild']});'''
             )
             conn.commit()
             return True
@@ -137,10 +137,12 @@ def insert_operator(guild: int, user_id: int) -> None:
 def remove_reminder(reminder: dict):
     """Removes a reminder"""
     try:
-        cursor.execute("DELETE FROM reminders " + _create_where_query(reminder))
-        return True
+        with closing(connect("reminder_bot.db")) as conn:
+            c = conn.cursor()        
+            c.execute(f"DELETE FROM reminders WHERE reminder_id={reminder['reminder_id']}") 
+            conn.commit()
+            return True
     except Exception as e:
-        print("Error removing reminder from db")
         print(e)
         return False
 
